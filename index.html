@@ -1,0 +1,1130 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Délestage</title>
+<meta name="description" content="Libérer de la place dans Gmail en retirant les pièces jointes volumineuses, après les avoir enregistrées.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%232c5fd4'/%3E%3Cpath d='M9 19l7-8 7 8' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<style>
+  :root {
+    --bg: #f6f5f2; --surface: #ffffff; --surface-2: #eeede8; --text: #1d1d1b; --muted: #6a6963; --line: #e2e0d9;
+    --accent: #2c5fd4; --accent-ink: #ffffff; --accent-soft: #e4ebfb;
+    --danger: #b3362d; --danger-soft: #f9e5e3; --ok: #2b7a4b; --ok-soft: #e1f2e8; --warn: #8a5d00; --warn-soft: #fbf0d9;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #151514; --surface: #1f1f1d; --surface-2: #2a2a27; --text: #ecebe6; --muted: #9b9a92; --line: #34332f;
+      --accent: #86a6ff; --accent-ink: #10172e; --accent-soft: #232c45;
+      --danger: #f08a80; --danger-soft: #3a2220; --ok: #7ccb9b; --ok-soft: #1d3326; --warn: #e5b85c; --warn-soft: #382d16;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #151514; --surface: #1f1f1d; --surface-2: #2a2a27; --text: #ecebe6; --muted: #9b9a92; --line: #34332f;
+    --accent: #86a6ff; --accent-ink: #10172e; --accent-soft: #232c45;
+    --danger: #f08a80; --danger-soft: #3a2220; --ok: #7ccb9b; --ok-soft: #1d3326; --warn: #e5b85c; --warn-soft: #382d16;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  button, input, select { font: inherit; color: inherit; }
+  a { color: var(--accent); }
+  [hidden] { display: none !important; }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 0 16px; }
+  .muted { color: var(--muted); }
+
+  .demo-banner { background: var(--accent-soft); font-size: 14px; text-align: center; padding: 8px 16px; }
+  header.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 0; }
+  .brand { font-weight: 650; font-size: 17px; display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+  .brand svg { flex: none; }
+  .account { display: flex; gap: 12px; align-items: center; font-size: 14px; color: var(--muted); min-width: 0; }
+  .account span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .btn { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 8px 14px; cursor: pointer; font-weight: 550; white-space: nowrap; }
+  .btn:hover:not(:disabled) { border-color: var(--muted); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  .btn.danger { background: var(--danger); border-color: var(--danger); color: var(--surface); }
+  .btn:disabled { opacity: .45; cursor: default; }
+  .link { background: none; border: 0; padding: 0; color: var(--accent); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+
+  /* Connexion */
+  .login { max-width: 560px; margin: 40px auto 60px; }
+  .login h1 { font-size: 27px; line-height: 1.2; margin: 0 0 10px; text-wrap: balance; }
+  .login .lead { color: var(--muted); margin: 0 0 20px; }
+  .points { list-style: none; padding: 0; margin: 0 0 24px; display: grid; gap: 10px; }
+  .points li { padding-left: 24px; position: relative; }
+  .points li::before { content: ""; position: absolute; left: 6px; top: .62em; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
+  .login .go { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .login .go .btn { padding: 10px 18px; }
+
+  /* Critères */
+  .criteria { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+  .field { display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
+  .field select, .field input { padding: 7px 9px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); font-size: 15px; color: var(--text); min-height: 38px; }
+  .hint { font-size: 14px; color: var(--muted); margin: 10px 2px 0; }
+
+  .notice { margin: 14px 0 0; padding: 11px 14px; border-radius: 8px; background: var(--surface); border: 1px solid var(--line); font-size: 14px; }
+  .notice.error { border-color: var(--danger); background: var(--danger-soft); }
+  .notice.ok { border-color: var(--ok); background: var(--ok-soft); }
+  .notice .btn { margin-left: 8px; padding: 4px 10px; }
+
+  /* Résultats */
+  .caption { margin: 22px 0 8px; font-size: 14px; color: var(--muted); }
+  .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .tile { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px; }
+  .tile .k { font-size: 13px; color: var(--muted); }
+  .tile .v { font-size: 25px; font-weight: 650; font-variant-numeric: tabular-nums; line-height: 1.3; }
+  .tile.hl .v { color: var(--accent); }
+  .done-line { font-size: 14px; color: var(--ok); margin: 8px 2px 0; }
+
+  h2.sec { font-size: 15px; margin: 22px 0 6px; display: flex; gap: 10px; align-items: baseline; }
+  h2.sec small { font-weight: 400; color: var(--muted); font-size: 13px; }
+  .years { display: grid; gap: 2px; }
+  .yr { display: grid; grid-template-columns: 44px 1fr 160px; align-items: center; gap: 12px; background: none; border: 0; padding: 3px 6px; border-radius: 6px; cursor: pointer; text-align: left; }
+  .yr:hover { background: var(--surface-2); }
+  .yr .y { font-variant-numeric: tabular-nums; font-size: 14px; }
+  .yr .bar { height: 10px; border-radius: 5px; overflow: hidden; }
+  .yr .bar i { display: block; height: 100%; min-width: 3px; background: var(--accent); border-radius: 5px; }
+  .yr .v { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; text-align: right; }
+  .years.filtering .yr:not(.on) { opacity: .4; }
+  .yr.on { background: var(--accent-soft); }
+
+  .listhead { display: flex; justify-content: space-between; align-items: center; gap: 10px 16px; flex-wrap: wrap; margin-top: 20px; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+  .listhead label { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+  .listhead select { padding: 5px 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+  .list { list-style: none; margin: 0; padding: 0 0 130px; }
+  .row { display: grid; grid-template-columns: 22px 92px minmax(0, 1fr) auto; grid-template-areas: "chk when what side"; gap: 4px 14px; padding: 12px 4px; border-bottom: 1px solid var(--line); align-items: start; cursor: pointer; }
+  .row:hover { background: color-mix(in srgb, var(--surface-2) 45%, transparent); }
+  .row input { grid-area: chk; margin: 4px 0 0; width: 16px; height: 16px; cursor: pointer; }
+  .row .when { grid-area: when; color: var(--muted); font-variant-numeric: tabular-nums; font-size: 14px; padding-top: 1px; }
+  .row .what { grid-area: what; min-width: 0; }
+  .row .subj { font-weight: 550; overflow-wrap: anywhere; }
+  .row .from { color: var(--muted); font-size: 14px; overflow-wrap: anywhere; }
+  .atts { list-style: none; padding: 0; margin: 4px 0 0; font-size: 14px; }
+  .atts li { overflow-wrap: anywhere; }
+  .atts li::before { content: "▪ "; color: var(--muted); }
+  .row .side { grid-area: side; display: grid; gap: 4px; justify-items: end; text-align: right; }
+  .row .size { font-weight: 650; font-variant-numeric: tabular-nums; }
+  .row .open { font-size: 13px; white-space: nowrap; }
+  .row.cleaned { cursor: default; }
+  .row.cleaned .what, .row.cleaned .when, .row.cleaned .size { opacity: .5; }
+  .row.cleaned .atts li { text-decoration: line-through; }
+  .badge { font-size: 12px; padding: 1px 8px; border-radius: 999px; white-space: nowrap; }
+  .badge.saved { background: var(--ok-soft); color: var(--ok); }
+  .badge.cleaned { background: var(--accent-soft); color: var(--accent); }
+  .badge.error { background: var(--danger-soft); color: var(--danger); cursor: help; }
+  .badge.busy { background: var(--surface-2); color: var(--muted); }
+  .row .err { grid-column: 3 / -1; font-size: 13px; color: var(--danger); }
+  .empty { padding: 28px 4px; color: var(--muted); }
+
+  @media (max-width: 640px) {
+    .tiles { grid-template-columns: 1fr 1fr; }
+    .tile.hl { grid-column: 1 / -1; order: -1; }
+    .yr { grid-template-columns: 40px 1fr 118px; gap: 8px; }
+    .row { grid-template-columns: 22px minmax(0, 1fr) auto; grid-template-areas: "chk when side" ". what what"; }
+    .row .err { grid-column: 2 / -1; }
+  }
+
+  /* Barre d'actions */
+  .actionbar { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface); border-top: 1px solid var(--line); box-shadow: 0 -6px 18px rgb(0 0 0 / .06); z-index: 5; }
+  .actionbar .prog { height: 3px; background: transparent; }
+  .actionbar .prog i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .25s; }
+  .actionbar .prog.indeterminate i { width: 30%; animation: slide 1.2s ease-in-out infinite; }
+  @keyframes slide { from { margin-left: -30%; } to { margin-left: 100%; } }
+  .actionbar .wrap { display: flex; align-items: center; gap: 10px; padding-top: 11px; padding-bottom: 12px; flex-wrap: wrap; }
+  .actionbar .info { flex: 1; min-width: 200px; font-size: 14px; }
+  .actionbar .btns { display: flex; gap: 10px; flex-wrap: wrap; }
+  @media (max-width: 640px) {
+    .actionbar .btns { width: 100%; flex-wrap: nowrap; }
+    .actionbar .btns .btn { flex: 1; white-space: normal; padding: 8px 10px; line-height: 1.25; }
+  }
+
+  dialog { border: 1px solid var(--line); border-radius: 12px; padding: 22px; max-width: 470px; width: calc(100% - 32px); background: var(--surface); color: var(--text); }
+  dialog::backdrop { background: rgb(0 0 0 / .4); }
+  dialog h2 { margin: 0 0 10px; font-size: 19px; line-height: 1.3; }
+  dialog p { margin: 0 0 10px; }
+  dialog .warn { background: var(--warn-soft); color: var(--warn); border-radius: 8px; padding: 9px 12px; font-size: 14px; }
+  dialog .actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+
+<div class="demo-banner" id="demoBanner" hidden>
+  Mode démonstration : données fictives, rien n'est modifié. <a href="./">Quitter la démo</a>
+</div>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <svg width="22" height="22" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="var(--accent)"/><path d="M9 19l7-8 7 8" stroke="var(--accent-ink)" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Délestage
+    </div>
+    <div class="account" id="account" hidden>
+      <span id="accountEmail"></span>
+      <button class="link" id="logoutBtn">Se déconnecter</button>
+    </div>
+  </header>
+
+  <!-- Écran de connexion -->
+  <section class="login" id="screenLogin">
+    <h1>Faites de la place dans votre Gmail</h1>
+    <p class="lead">Délestage retrouve les mails qui contiennent de grosses pièces jointes, vous permet de les enregistrer sur votre ordinateur, puis les retire de Gmail en conservant le texte des mails.</p>
+    <ul class="points">
+      <li>Tout se passe dans votre navigateur : vos mails ne passent par aucun autre serveur que ceux de Google.</li>
+      <li>Rien n'est effacé définitivement : les mails d'origine vont dans la corbeille de Gmail et restent récupérables pendant 30 jours.</li>
+      <li>À la connexion, Google affiche « Google n'a pas validé cette application » : c'est normal pour une application familiale. Cliquez sur « Continuer ».</li>
+    </ul>
+    <div class="go">
+      <button class="btn primary" id="loginBtn">Se connecter avec Google</button>
+      <a href="?demo">ou essayer avec des données fictives</a>
+    </div>
+    <div class="notice error" id="loginError" hidden></div>
+    <div class="notice" id="notConfigured" hidden>Cette copie de l'application n'est pas encore reliée à Google. Suivez le fichier <strong>GUIDE.md</strong> pour la configurer.</div>
+  </section>
+
+  <!-- Application -->
+  <section id="screenApp" hidden>
+    <form class="criteria" id="criteria">
+      <label class="field">Pièces jointes de plus de
+        <select id="minSize">
+          <option value="1">1 Mo</option>
+          <option value="2">2 Mo</option>
+          <option value="5" selected>5 Mo</option>
+          <option value="10">10 Mo</option>
+          <option value="20">20 Mo</option>
+        </select>
+      </label>
+      <label class="field">Reçues à partir du (facultatif)
+        <input type="date" id="dateFrom">
+      </label>
+      <label class="field">Jusqu'au (facultatif)
+        <input type="date" id="dateTo">
+      </label>
+      <button class="btn primary" id="scanBtn" type="submit">Analyser ma boîte</button>
+    </form>
+    <p class="hint" id="scanHint">L'analyse ne modifie rien : elle recense les pièces jointes et l'espace qu'elles occupent.</p>
+    <div class="notice" id="notice" hidden></div>
+
+    <section id="results" hidden>
+      <p class="caption" id="caption"></p>
+      <div class="tiles">
+        <div class="tile"><div class="k">Mails concernés</div><div class="v" id="tMails">0</div></div>
+        <div class="tile"><div class="k">Pièces jointes</div><div class="v" id="tAtts">0</div></div>
+        <div class="tile hl"><div class="k">Espace récupérable</div><div class="v" id="tSize">0</div></div>
+      </div>
+      <p class="done-line" id="doneLine" hidden></p>
+
+      <div id="yearsBlock">
+        <h2 class="sec">Par année <small id="yearsHint">cliquez sur une année pour n'afficher qu'elle</small></h2>
+        <div class="years" id="years"></div>
+      </div>
+
+      <div class="listhead">
+        <label><input type="checkbox" id="selectAll"> <span id="selectAllLabel">Tout sélectionner</span></label>
+        <label>Trier :
+          <select id="sort">
+            <option value="size">les plus lourds d'abord</option>
+            <option value="new">les plus récents d'abord</option>
+            <option value="old">les plus anciens d'abord</option>
+          </select>
+        </label>
+      </div>
+      <ul class="list" id="list"></ul>
+    </section>
+  </section>
+</div>
+
+<div class="actionbar" id="actionbar" hidden>
+  <div class="prog" id="prog"><i></i></div>
+  <div class="wrap">
+    <div class="info" id="barInfo"></div>
+    <div class="btns">
+      <button class="btn" id="saveBtn">Enregistrer sur l'ordinateur</button>
+      <button class="btn danger" id="cleanBtn">Retirer de Gmail…</button>
+      <button class="btn" id="stopBtn" hidden>Arrêter</button>
+    </div>
+  </div>
+</div>
+
+<dialog id="confirmDlg">
+  <form method="dialog">
+    <h2 id="dlgTitle"></h2>
+    <p id="dlgText"></p>
+    <p class="warn" id="dlgWarn" hidden></p>
+    <div class="actions">
+      <button class="btn" value="cancel">Annuler</button>
+      <button class="btn danger" value="ok" id="dlgOk">Retirer les pièces jointes</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+'use strict';
+
+// ─── Configuration ──────────────────────────────────────────────────────────
+// Collez ici l'« ID client » créé dans Google Cloud (voir GUIDE.md).
+const CLIENT_ID = 'COLLER_ICI_VOTRE_ID_CLIENT.apps.googleusercontent.com';
+
+const SCOPE = 'https://www.googleapis.com/auth/gmail.modify'; // lecture, ajout, corbeille — jamais de suppression définitive
+const API = 'https://gmail.googleapis.com/gmail/v1/users/me';
+const UPLOAD = 'https://gmail.googleapis.com/upload/gmail/v1/users/me';
+const DEMO = new URLSearchParams(location.search).has('demo');
+const CONFIGURED = !CLIENT_ID.startsWith('COLLER_ICI');
+const MB = 1024 * 1024;
+
+/* MIME:start — réécriture d'un mail brut (RFC 822) en remplaçant certaines parties.
+   On travaille sur une « chaîne binaire » (1 caractère = 1 octet) et on ne touche
+   qu'aux zones des pièces jointes retirées : tout le reste est recopié à l'identique. */
+const MIME = (() => {
+  function headerEnd(s, start, end) {
+    if (s.startsWith('\r\n', start)) return [start, start + 2];
+    if (s[start] === '\n') return [start, start + 1];
+    let a = s.indexOf('\r\n\r\n', start), b = s.indexOf('\n\n', start);
+    if (a > end - 4) a = -1;
+    if (b > end - 2) b = -1;
+    if (a >= 0 && (b < 0 || a < b)) return [a, a + 4];
+    if (b >= 0) return [b, b + 2];
+    return [end, end];
+  }
+
+  function parseHeaders(text) {
+    const map = {};
+    for (const line of text.replace(/\r?\n([ \t])/g, '$1').split(/\r?\n/)) {
+      const i = line.indexOf(':');
+      if (i <= 0) continue;
+      const k = line.slice(0, i).trim().toLowerCase();
+      if (!(k in map)) map[k] = line.slice(i + 1).trim();
+    }
+    return map;
+  }
+
+  function param(value, name) {
+    const m = new RegExp('(?:^|;)\\s*' + name + '\\s*=\\s*(?:"([^"]*)"|([^;\\s]+))', 'i').exec(value || '');
+    return m ? (m[1] !== undefined ? m[1] : m[2]) : null;
+  }
+
+  // Numérotation identique aux partId de l'API Gmail : "" pour la racine, puis "0", "1", "1.0"…
+  function parse(s, start = 0, end = s.length, id = '') {
+    const [hEnd, bStart] = headerEnd(s, start, end);
+    const headers = parseHeaders(s.slice(start, hEnd));
+    const ct = headers['content-type'] || 'text/plain';
+    const type = ct.split(';')[0].trim().toLowerCase();
+    const node = { id, start, end, hEnd, bStart, type, cte: (headers['content-transfer-encoding'] || '').trim().toLowerCase(), children: [] };
+    if (type.startsWith('multipart/')) {
+      const boundary = param(ct, 'boundary');
+      if (boundary) node.children = parseMultipart(s, bStart, end, boundary, id);
+    } else if (type === 'message/rfc822') {
+      node.children = parse(s, bStart, end, id).children; // les parties d'un mail joint sont rattachées directement
+    }
+    return node;
+  }
+
+  function lineBreakStart(s, d) {
+    if (s[d - 1] === '\n') { d--; if (s[d - 1] === '\r') d--; }
+    return d;
+  }
+
+  function parseMultipart(s, from, end, boundary, id) {
+    const delim = '--' + boundary, marks = [];
+    let i = from;
+    for (;;) {
+      const d = s.indexOf(delim, i);
+      if (d < 0 || d >= end) break;
+      i = d + delim.length;
+      if (d !== from && s[d - 1] !== '\n') continue;
+      let le = s.indexOf('\n', i);
+      if (le < 0 || le >= end) le = end;
+      const rest = s.slice(i, le).replace(/\r$/, '');
+      const closing = rest.startsWith('--');
+      if (!closing && rest.trim() !== '') continue;
+      marks.push({ d, next: Math.min(le + 1, end), closing });
+      if (closing) break;
+    }
+    const parts = [];
+    for (let k = 0; k < marks.length && !marks[k].closing; k++) {
+      const cStart = marks[k].next;
+      const cEnd = k + 1 < marks.length ? Math.max(cStart, lineBreakStart(s, marks[k + 1].d)) : end;
+      parts.push(parse(s, cStart, cEnd, id === '' ? String(parts.length) : id + '.' + parts.length));
+    }
+    return parts;
+  }
+
+  function decodedSize(s, n) {
+    if (n.cte !== 'base64') return n.end - n.bStart;
+    let c = 0, pad = 0;
+    for (let i = n.bStart; i < n.end; i++) {
+      const ch = s.charCodeAt(i);
+      if (ch > 32) { c++; if (ch === 61) pad++; }
+    }
+    return Math.floor(c * 3 / 4) - pad;
+  }
+
+  function sizeMatches(est, size, cte) {
+    if (cte === 'base64') return Math.abs(est - size) <= Math.max(2048, size * 0.02);
+    return est >= size * 0.9 && est <= size * 3 + 2048;
+  }
+
+  function utf8bin(str) {
+    let out = '';
+    for (const b of new TextEncoder().encode(str)) out += String.fromCharCode(b);
+    return out;
+  }
+
+  // Nouvelle partie : on garde les en-têtes qui ne décrivent pas le contenu
+  // (pour la racine : From, To, Subject, Date…) et on met un petit texte à la place.
+  function placeholder(s, n, text, eol) {
+    const fields = [];
+    if (n.hEnd > n.start) {
+      let cur = null;
+      for (const line of s.slice(n.start, n.hEnd).split(/\r?\n/)) {
+        if (/^[ \t]/.test(line) && cur) { cur.push(line); continue; }
+        cur = [line];
+        fields.push(cur);
+      }
+    }
+    const kept = fields.filter(f => !/^content-/i.test(f[0])).map(f => f.join(eol));
+    const body = btoa(utf8bin(text)).match(/.{1,76}/g);
+    const lines = [...kept, 'Content-Type: text/plain; charset="UTF-8"', 'Content-Transfer-Encoding: base64', 'Content-Disposition: inline', '', ...body];
+    return lines.join(eol) + (n.id === '' ? eol : '');
+  }
+
+  // atts : [{ partId, size, filename }] tels que fournis par l'API Gmail.
+  function strip(s, atts, makeText) {
+    const eol = s.includes('\r\n') ? '\r\n' : '\n';
+    const byId = new Map();
+    (function walk(n) { byId.set(n.id, n); n.children.forEach(walk); })(parse(s));
+
+    const targets = atts.map(a => {
+      const n = byId.get(a.partId);
+      if (!n || n.type.startsWith('multipart/')) throw new Error(`structure du mail inattendue (partie « ${a.filename} » introuvable)`);
+      if (!sizeMatches(decodedSize(s, n), a.size, n.cte)) throw new Error(`structure du mail inattendue (taille de « ${a.filename} » incohérente)`);
+      return { n, a };
+    }).sort((x, y) => y.n.start - x.n.start);
+
+    for (let k = 1; k < targets.length; k++) {
+      if (targets[k].n.end > targets[k - 1].n.start) throw new Error('structure du mail inattendue (pièces jointes imbriquées)');
+    }
+
+    let out = s;
+    for (const { n, a } of targets) out = out.slice(0, n.start) + placeholder(s, n, makeText(a), eol) + out.slice(n.end);
+    return out;
+  }
+
+  return { parse, strip, decodedSize };
+})();
+/* MIME:end */
+
+// ─── Utilitaires ────────────────────────────────────────────────────────────
+const $ = sel => document.querySelector(sel);
+const nf1 = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1 });
+const nf2 = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 2 });
+const nf0 = new Intl.NumberFormat('fr-FR');
+function fmtSize(b) {
+  if (b >= 1024 * MB) return nf2.format(b / (1024 * MB)) + ' Go';
+  if (b >= MB) return nf1.format(b / MB) + ' Mo';
+  return Math.max(1, Math.round(b / 1024)) + ' Ko';
+}
+const pad2 = n => String(n).padStart(2, '0');
+const isoDay = d => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+const frDay = d => d.toLocaleDateString('fr-FR');
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const plural = (n, one, many) => `${nf0.format(n)} ${n > 1 ? many : one}`;
+const sum = (list, f) => list.reduce((t, x) => t + f(x), 0);
+
+function senderName(from) {
+  const m = /^\s*"?([^"<]*?)"?\s*<([^>]+)>/.exec(from || '');
+  return m ? (m[1].trim() || m[2]) : ((from || '').trim() || '(expéditeur inconnu)');
+}
+function localDate(iso, plusDays = 0) {
+  const [y, m, d] = iso.split('-').map(Number);
+  return new Date(y, m - 1, d + plusDays);
+}
+const epochOf = (iso, plusDays = 0) => Math.floor(localDate(iso, plusDays).getTime() / 1000);
+const b64ToBin = s => atob(s.replace(/-/g, '+').replace(/_/g, '/'));
+function binToBytes(bin) {
+  const u = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+  return u;
+}
+const gmailLink = id => `https://mail.google.com/mail/?authuser=${encodeURIComponent(S.email)}#all/${id}`;
+
+// ─── État ───────────────────────────────────────────────────────────────────
+const S = {
+  token: null, tokenExp: 0, email: '',
+  items: [], sel: new Set(), year: null, sort: 'size', scanned: null,
+  busy: false, stop: false, progText: '', progFrac: null,
+  dir: null, saved: new Set(),
+};
+const savedKey = () => 'delestage:saved:' + S.email;
+function loadSaved() {
+  if (DEMO) return;
+  try { S.saved = new Set(JSON.parse(localStorage.getItem(savedKey()) || '[]')); } catch { S.saved = new Set(); }
+}
+function persistSaved() {
+  if (DEMO) return;
+  try { localStorage.setItem(savedKey(), JSON.stringify([...S.saved])); } catch {}
+}
+
+// ─── Connexion Google ───────────────────────────────────────────────────────
+let tokenClient = null, pendingAuth = null;
+function requestToken(prompt) {
+  return new Promise((resolve, reject) => {
+    if (!tokenClient) {
+      if (!window.google?.accounts?.oauth2) return reject(new Error("Le service de connexion Google n'a pas pu être chargé. Vérifiez votre connexion internet puis rechargez la page."));
+      tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: CLIENT_ID, scope: SCOPE,
+        callback: r => pendingAuth && pendingAuth.done(r),
+        error_callback: e => pendingAuth && pendingAuth.fail(e),
+      });
+    }
+    pendingAuth = {
+      done(r) {
+        pendingAuth = null;
+        if (r.error) return reject(new Error(r.error === 'access_denied' ? "Accès refusé. Si Google indique que l'application n'est pas validée, demandez à la personne qui l'a installée d'ajouter votre adresse aux « utilisateurs test »." : 'Connexion impossible (' + r.error + ').'));
+        if (!google.accounts.oauth2.hasGrantedAllScopes(r, SCOPE)) return reject(new Error("L'accès à Gmail n'a pas été autorisé. Reconnectez-vous en cochant la case concernant Gmail."));
+        S.token = r.access_token;
+        S.tokenExp = Date.now() + (Number(r.expires_in) || 3600) * 1000;
+        resolve();
+      },
+      fail(e) {
+        pendingAuth = null;
+        reject(new Error(e.type === 'popup_failed_to_open'
+          ? 'La fenêtre de connexion Google a été bloquée : autorisez les fenêtres pop-up pour cette page, puis réessayez.'
+          : 'Connexion annulée.'));
+      },
+    };
+    tokenClient.requestAccessToken({ prompt });
+  });
+}
+async function ensureToken() {
+  if (DEMO || (S.token && Date.now() < S.tokenExp - 5 * 60e3)) return;
+  await requestToken('');
+}
+
+// ─── Accès à Gmail ──────────────────────────────────────────────────────────
+class HttpError extends Error { constructor(status, msg) { super(msg); this.status = status; } }
+
+async function gfetch(url, opts = {}) {
+  for (let attempt = 0; ; attempt++) {
+    let res;
+    try {
+      res = await fetch(url, { ...opts, headers: { ...(opts.headers || {}), Authorization: 'Bearer ' + S.token } });
+    } catch (e) {
+      if (attempt < 4) { await sleep(1500 * (attempt + 1)); continue; }
+      throw new Error('Connexion internet interrompue.');
+    }
+    if (res.ok) return res.status === 204 ? null : res.json();
+    const text = await res.text().catch(() => '');
+    const transient = res.status === 429 || res.status >= 500 || (res.status === 403 && /rateLimit/i.test(text));
+    if (transient && attempt < 6) { await sleep(Math.min(30000, 1000 * 2 ** attempt) + Math.random() * 500); continue; }
+    if (res.status === 401) { S.tokenExp = 0; throw new HttpError(401, 'Votre session Google a expiré.'); }
+    let msg = text;
+    try { msg = JSON.parse(text).error.message; } catch {}
+    throw new HttpError(res.status, `Gmail a répondu ${res.status} : ${msg}`);
+  }
+}
+const gget = url => gfetch(url);
+const gpost = url => gfetch(url, { method: 'POST' });
+
+const META_FIELDS = 'id,threadId,labelIds,internalDate,sizeEstimate,payload(partId,mimeType,filename,headers,body(size,attachmentId),parts)';
+const NO_COPY_LABELS = new Set(['DRAFT', 'CHAT', 'SPAM', 'TRASH']);
+const BASIC_LABELS = new Set(['INBOX', 'UNREAD', 'STARRED', 'SENT', 'IMPORTANT']);
+
+const gmail = {
+  useFields: true,
+  async profile() { return (await gget(`${API}/profile`)).emailAddress; },
+
+  async listIds(q, onCount) {
+    const ids = [];
+    let page = '';
+    do {
+      const r = await gget(`${API}/messages?maxResults=500&q=${encodeURIComponent(q)}${page ? '&pageToken=' + page : ''}`);
+      for (const m of r.messages || []) ids.push(m.id);
+      onCount(ids.length);
+      page = r.nextPageToken;
+    } while (page && !S.stop);
+    return ids;
+  },
+
+  async getMeta(id) {
+    if (this.useFields) {
+      try { return await gget(`${API}/messages/${id}?format=full&fields=${encodeURIComponent(META_FIELDS)}`); }
+      catch (e) { if (e.status !== 400) throw e; this.useFields = false; }
+    }
+    return gget(`${API}/messages/${id}?format=full`);
+  },
+
+  async attachment(item, att) {
+    let r;
+    try {
+      r = await gget(`${API}/messages/${item.id}/attachments/${att.attachmentId}`);
+    } catch (e) {
+      if (e.status !== 400 && e.status !== 404) throw e;
+      // Identifiant de pièce jointe périmé : on le redemande.
+      const fresh = findPart((await gget(`${API}/messages/${item.id}?format=full`)).payload, att.partId);
+      if (!fresh?.body?.attachmentId) throw e;
+      att.attachmentId = fresh.body.attachmentId;
+      r = await gget(`${API}/messages/${item.id}/attachments/${att.attachmentId}`);
+    }
+    return binToBytes(b64ToBin(r.data));
+  },
+
+  async insert(bytes, labelIds, threadId) {
+    const boundary = 'delestage_' + Math.random().toString(36).slice(2);
+    let last;
+    // Si Gmail refuse un libellé système, on réessaie avec les libellés de base.
+    for (const labels of [labelIds, labelIds.filter(l => BASIC_LABELS.has(l) || l.startsWith('Label_'))]) {
+      const body = new Blob([
+        `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify({ labelIds: labels, threadId })}\r\n`,
+        `--${boundary}\r\nContent-Type: message/rfc822\r\n\r\n`, bytes, `\r\n--${boundary}--`,
+      ]);
+      try {
+        return await gfetch(`${UPLOAD}/messages?uploadType=multipart&internalDateSource=dateHeader`, {
+          method: 'POST', headers: { 'Content-Type': `multipart/related; boundary=${boundary}` }, body,
+        });
+      } catch (e) { last = e; if (e.status !== 400) throw e; }
+    }
+    throw last;
+  },
+
+  // Remplace le mail par une copie sans les pièces jointes, puis met l'original à la corbeille.
+  // L'original n'est mis à la corbeille qu'après avoir vérifié que la copie allégée existe.
+  async clean(item, makeText) {
+    const orig = await gget(`${API}/messages/${item.id}?format=raw`);
+    const bytes = binToBytes(MIME.strip(b64ToBin(orig.raw), item.atts, makeText));
+    const labels = (orig.labelIds || []).filter(l => !NO_COPY_LABELS.has(l));
+    const maxSize = orig.sizeEstimate - item.total * 0.9;
+    const copyOk = async ins => ins && ins.id !== item.id && (await gget(`${API}/messages/${ins.id}?format=minimal`)).sizeEstimate <= maxSize;
+
+    let ins = await this.insert(bytes, labels, orig.threadId);
+    if (await copyOk(ins)) {
+      await gpost(`${API}/messages/${item.id}/trash`);
+      return { newId: ins.id };
+    }
+    if (ins && ins.id !== item.id) {
+      await gpost(`${API}/messages/${ins.id}/trash`);
+      throw new Error("la copie allégée n'a pas pu être vérifiée ; le mail d'origine est intact.");
+    }
+    // Gmail a fusionné la copie avec l'original (même identifiant de mail) :
+    // on met d'abord l'original à la corbeille, puis on réessaie.
+    await gpost(`${API}/messages/${item.id}/trash`);
+    try {
+      ins = await this.insert(bytes, labels, orig.threadId);
+      if (await copyOk(ins)) return { newId: ins.id };
+      if (ins && ins.id !== item.id) await gpost(`${API}/messages/${ins.id}/trash`);
+    } catch (e) {
+      await gpost(`${API}/messages/${item.id}/untrash`);
+      throw e;
+    }
+    await gpost(`${API}/messages/${item.id}/untrash`);
+    throw new Error("Gmail n'a pas accepté la copie allégée ; le mail d'origine est intact.");
+  },
+};
+
+function findPart(part, partId) {
+  if (!part) return null;
+  if ((part.partId ?? '') === partId) return part;
+  for (const p of part.parts || []) { const f = findPart(p, partId); if (f) return f; }
+  return null;
+}
+
+function collectAtts(part, min, out) {
+  const b = part.body || {};
+  if (part.filename && b.attachmentId && b.size >= min && !/pkcs7-mime/i.test(part.mimeType || '')) {
+    out.push({ partId: part.partId ?? '', filename: part.filename, mimeType: part.mimeType, size: b.size, attachmentId: b.attachmentId });
+    return;
+  }
+  for (const p of part.parts || []) collectAtts(p, min, out);
+}
+
+function toItem(m, min) {
+  if ((m.labelIds || []).includes('DRAFT') || /multipart\/encrypted/i.test(m.payload?.mimeType || '')) return null;
+  const atts = [];
+  collectAtts(m.payload || {}, min, atts);
+  if (!atts.length) return null;
+  const header = name => (m.payload.headers || []).find(h => h.name.toLowerCase() === name)?.value || '';
+  return {
+    id: m.id, date: new Date(Number(m.internalDate)), from: header('from'), subject: header('subject') || '(sans objet)',
+    atts, total: sum(atts, a => a.size), saved: false, cleaned: false, busy: false, error: '', newId: null,
+  };
+}
+
+// ─── Démonstration (données fictives) ───────────────────────────────────────
+const demo = (() => {
+  let seed = 20261010;
+  const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const pick = a => a[Math.floor(rnd() * a.length)];
+  const senders = ['Maman <maman@exemple.fr>', 'Julien Martin <julien.martin@exemple.fr>', 'Studio Photo Lumière <contact@studio-lumiere.fr>',
+    'Agence du Centre <agence@immo-centre.fr>', 'Claire Dubois <claire.d@exemple.fr>', 'FC Les Pins <secretariat@fc-lespins.fr>',
+    'Papa <papa@exemple.fr>', 'Cabinet Morel <compta@cabinet-morel.fr>', 'Sophie <sophie.l@exemple.fr>'];
+  const kinds = [
+    ['Photos des vacances', 'Photos_vacances.zip', 'application/zip', 6, 24],
+    ["Vidéo de l'anniversaire", 'Anniversaire.mp4', 'video/mp4', 9, 24],
+    ['Contrat de location signé', 'Contrat_location.pdf', 'application/pdf', 1, 7],
+    ['Les photos !', 'IMG_2041.jpg', 'image/jpeg', 2, 7],
+    ['Documents scannés', 'Scan_documents.pdf', 'application/pdf', 2, 14],
+    ['Présentation pour lundi', 'Presentation.pptx', 'application/vnd.openxmlformats-officedocument.presentationml.presentation', 3, 18],
+    ['Faire-part', 'Faire-part.pdf', 'application/pdf', 1, 6],
+    ['Album de Noël', 'Noel.zip', 'application/zip', 8, 22],
+  ];
+  const store = new Map();
+  const now = Date.now();
+  for (let i = 0; i < 160; i++) {
+    const [subject, file, mimeType, lo, hi] = pick(kinds);
+    const date = new Date(2013 + Math.floor(rnd() * 14), Math.floor(rnd() * 12), 1 + Math.floor(rnd() * 28), 8 + Math.floor(rnd() * 12));
+    if (date.getTime() > now) continue;
+    const count = rnd() < 0.25 ? 2 + Math.floor(rnd() * 3) : 1;
+    const parts = [{ partId: '0', mimeType: 'text/plain', filename: '', body: { size: 900 } }];
+    for (let k = 0; k < count; k++) {
+      const filename = count > 1 ? file.replace(/(\d*)\.(\w+)$/, (_, n, ext) => `${n ? +n + k : '_' + (k + 1)}.${ext}`) : file;
+      parts.push({ partId: String(k + 1), mimeType, filename, body: { size: Math.round((lo + rnd() * (hi - lo)) * MB), attachmentId: 'att' + k } });
+    }
+    const id = (0x18a3f00000 + i * 7919).toString(16);
+    store.set(id, {
+      id, threadId: id, labelIds: ['INBOX'], internalDate: String(date.getTime()),
+      sizeEstimate: Math.round(sum(parts, p => p.body.size) * 1.37 + 20000),
+      payload: { partId: '', mimeType: 'multipart/mixed', filename: '', headers: [{ name: 'From', value: pick(senders) }, { name: 'Subject', value: subject }], parts },
+    });
+  }
+  return {
+    async profile() { return 'vous@exemple.fr'; },
+    async listIds(q, onCount) {
+      const larger = +(/larger:(\d+)M/.exec(q)?.[1] || 0) * MB;
+      const after = +(/after:(\d+)/.exec(q)?.[1] || 0) * 1000;
+      const before = +(/before:(\d+)/.exec(q)?.[1] || 9e12 / 1000) * 1000;
+      const ids = [...store.values()].filter(m => m.sizeEstimate > larger && +m.internalDate >= after && +m.internalDate < before).map(m => m.id);
+      await sleep(500); onCount(ids.length);
+      return ids;
+    },
+    async getMeta(id) { await sleep(6); return store.get(id); },
+    async attachment() { await sleep(120 + rnd() * 200); return new Uint8Array(0); },
+    async clean(item) {
+      await sleep(450 + rnd() * 400);
+      const m = store.get(item.id);
+      const gone = new Set(item.atts.map(a => a.partId));
+      m.payload.parts = m.payload.parts.filter(p => !gone.has(p.partId));
+      m.sizeEstimate = Math.round(sum(m.payload.parts, p => p.body.size) * 1.37 + 20000);
+      return { newId: item.id };
+    },
+  };
+})();
+
+const backend = DEMO ? demo : gmail;
+
+// ─── Opérations ─────────────────────────────────────────────────────────────
+async function pool(list, n, fn) {
+  let i = 0, err = null;
+  const worker = async () => {
+    while (!S.stop && i < list.length) {
+      try { await fn(list[i++]); } catch (e) { err = err || e; S.stop = true; }
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(n, list.length) }, worker));
+  if (err) throw err;
+}
+
+function startOp(text) {
+  S.busy = true; S.stop = false;
+  progress(text, null);
+  window.onbeforeunload = () => 'Une opération est en cours.';
+}
+function endOp() {
+  S.busy = false; S.stop = false; S.progText = ''; S.progFrac = null;
+  window.onbeforeunload = null;
+  render();
+}
+function progress(text, frac) {
+  S.progText = text; S.progFrac = frac;
+  renderBar();
+}
+
+function authProblem(e) {
+  notice(esc(e.message) + ' <button class="btn" data-action="reconnect">Se reconnecter</button> puis relancez l\'opération : ce qui est déjà fait ne sera pas refait.', 'error');
+}
+
+async function scan() {
+  if (S.busy) return;
+  hideNotice();
+  const minMB = Number($('#minSize').value), from = $('#dateFrom').value, to = $('#dateTo').value;
+  if (from && to && from > to) return notice('La date de début est postérieure à la date de fin.', 'error');
+  try { await ensureToken(); } catch (e) { return notice(esc(e.message), 'error'); }
+
+  const q = ['has:attachment', `larger:${minMB}M`];
+  if (from) q.push('after:' + epochOf(from));
+  if (to) q.push('before:' + epochOf(to, 1));
+  S.items = []; S.sel.clear(); S.year = null;
+  S.scanned = { minMB, from, to };
+  $('#scanHint').hidden = true;
+  $('#results').hidden = false;
+  render();
+  startOp('Recherche des mails volumineux…');
+  let failed = 0;
+  try {
+    const ids = await backend.listIds(q.join(' '), n => progress(`Recherche des mails volumineux… ${plural(n, 'trouvé', 'trouvés')}`, null));
+    let done = 0;
+    await pool(ids, 8, async id => {
+      try {
+        const it = toItem(await backend.getMeta(id), minMB * MB);
+        if (it) { it.saved = S.saved.has(it.id); S.items.push(it); }
+      } catch (e) {
+        if (e.status === 401) throw e;
+        failed++;
+      }
+      progress(`Analyse : ${nf0.format(++done)} / ${nf0.format(ids.length)} mails`, done / ids.length);
+      if (done % 25 === 0) renderSoon();
+    });
+    if (S.stop) notice('Analyse interrompue : les résultats ci-dessous sont incomplets.');
+    else if (failed) notice(failed === 1 ? "Un mail n'a pas pu être lu et ne figure pas dans la liste." : `${nf0.format(failed)} mails n'ont pas pu être lus et ne figurent pas dans la liste.`);
+  } catch (e) {
+    e.status === 401 ? authProblem(e) : notice(esc(e.message), 'error');
+  } finally {
+    endOp();
+  }
+}
+
+async function saveSelected() {
+  const items = selectedItems().filter(it => !it.cleaned);
+  if (!items.length || S.busy) return;
+  hideNotice();
+  try { await ensureToken(); } catch (e) { return notice(esc(e.message), 'error'); }
+
+  if (!DEMO && typeof window.showDirectoryPicker === 'function' && !S.dir) {
+    try {
+      S.dir = await window.showDirectoryPicker({ id: 'delestage', mode: 'readwrite', startIn: 'downloads' });
+    } catch (e) {
+      if (e.name !== 'AbortError') notice('Le choix du dossier a échoué. Cliquez à nouveau sur « Enregistrer sur l\'ordinateur ».', 'error');
+      return;
+    }
+  }
+
+  const total = sum(items, it => it.atts.length);
+  let done = 0, okItems = 0, errors = 0;
+  startOp('Enregistrement des pièces jointes…');
+  try {
+    await pool(items, 3, async it => {
+      it.busy = true; renderSoon();
+      try {
+        for (const a of it.atts) {
+          if (S.stop) return;
+          await saveFile(it, a, await backend.attachment(it, a));
+          progress(`Enregistrement : ${nf0.format(++done)} / ${nf0.format(total)} pièces jointes`, done / total);
+        }
+        it.saved = true; it.error = ''; okItems++;
+        S.saved.add(it.id); persistSaved();
+      } catch (e) {
+        if (e.status === 401) throw e;
+        it.error = 'Enregistrement impossible : ' + e.message; errors++;
+      } finally {
+        it.busy = false; renderSoon();
+      }
+    });
+    const where = DEMO ? ' (démo : aucun fichier n\'est réellement créé)'
+      : S.dir ? ` dans le dossier « ${esc(S.dir.name)} », rangées par année`
+      : ' dans le dossier de téléchargement de votre navigateur';
+    let msg = `${plural(done, 'pièce jointe enregistrée', 'pièces jointes enregistrées')}${where}.`;
+    if (errors) msg += ` ${plural(errors, 'mail est', 'mails sont')} en erreur : voir la liste.`;
+    if (S.stop) msg = 'Enregistrement interrompu. ' + msg;
+    notice(msg, errors ? 'error' : 'ok');
+  } catch (e) {
+    e.status === 401 ? authProblem(e) : notice(esc(e.message), 'error');
+  } finally {
+    endOp();
+  }
+}
+
+function fileName(it, a) {
+  const clean = s => (s || '').replace(/[<>:"/\\|?*\u0000-\u001f]/g, '_').replace(/\s+/g, ' ').trim();
+  let name = `${isoDay(it.date)} - ${clean(senderName(it.from)).slice(0, 40)} - ${clean(a.filename) || 'piece-jointe'}`.replace(/[. ]+$/, '');
+  if (name.length > 150) {
+    const dot = name.lastIndexOf('.');
+    const ext = dot > name.length - 12 ? name.slice(dot) : '';
+    name = name.slice(0, 150 - ext.length) + ext;
+  }
+  return name;
+}
+const withSuffix = (name, k) => { const dot = name.lastIndexOf('.'); return dot > 0 ? `${name.slice(0, dot)} (${k})${name.slice(dot)}` : `${name} (${k})`; };
+
+async function saveFile(it, a, bytes) {
+  if (DEMO) return;
+  const base = fileName(it, a);
+  if (S.dir) {
+    const folder = await S.dir.getDirectoryHandle(String(it.date.getFullYear()), { create: true });
+    let name = base;
+    for (let k = 2; ; k++) {
+      try {
+        const existing = await (await folder.getFileHandle(name)).getFile();
+        if (existing.size === bytes.length) return; // déjà enregistrée
+        name = withSuffix(base, k);
+      } catch (e) {
+        if (e.name !== 'NotFoundError') throw e;
+        break;
+      }
+    }
+    const w = await (await folder.getFileHandle(name, { create: true })).createWritable();
+    await w.write(bytes);
+    await w.close();
+  } else {
+    const url = URL.createObjectURL(new Blob([bytes], { type: a.mimeType || 'application/octet-stream' }));
+    const link = Object.assign(document.createElement('a'), { href: url, download: base });
+    document.body.append(link); link.click(); link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60e3);
+    await sleep(350);
+  }
+}
+
+function askClean() {
+  const items = selectedItems().filter(it => !it.cleaned);
+  if (!items.length || S.busy) return;
+  const atts = sum(items, it => it.atts.length), size = sum(items, it => it.total);
+  const unsaved = items.filter(it => !it.saved).length;
+  $('#dlgTitle').textContent = `Retirer ${plural(atts, 'pièce jointe', 'pièces jointes')} de ${plural(items.length, 'mail', 'mails')} ?`;
+  $('#dlgText').textContent = `Chaque mail sera remplacé par une copie identique (même texte, même date, même conversation) sans les pièces jointes listées, soit ${fmtSize(size)}. Les mails d'origine iront dans la corbeille de Gmail, où ils restent récupérables 30 jours.`;
+  $('#dlgWarn').hidden = !unsaved;
+  $('#dlgWarn').textContent = unsaved === items.length
+    ? "Attention : aucune de ces pièces jointes n'a été enregistrée sur cet ordinateur."
+    : unsaved === 1 ? "Attention : un de ces mails n'a pas été enregistré sur cet ordinateur."
+    : `Attention : ${nf0.format(unsaved)} de ces mails n'ont pas été enregistrés sur cet ordinateur.`;
+  const dlg = $('#confirmDlg');
+  $('#dlgOk').onclick = e => { e.preventDefault(); dlg.close(); cleanItems(items); };
+  dlg.showModal();
+  $('#dlgOk').blur();
+}
+
+async function cleanItems(items) {
+  hideNotice();
+  try { await ensureToken(); } catch (e) { return notice(esc(e.message), 'error'); }
+  const today = frDay(new Date());
+  const makeText = a => `[Pièce jointe retirée le ${today} pour libérer de l'espace : « ${a.filename} » (${fmtSize(a.size)})]`;
+  let done = 0, ok = 0, freed = 0, errors = 0, fatal = null;
+  startOp('Retrait des pièces jointes…');
+  try {
+    await pool(items, 2, async it => {
+      it.busy = true; it.error = ''; renderSoon();
+      try {
+        const r = await backend.clean(it, makeText);
+        it.cleaned = true; it.newId = r.newId; S.sel.delete(it.id);
+        ok++; freed += it.total;
+      } catch (e) {
+        if (e.status === 401) throw e;
+        it.error = 'Non allégé : ' + e.message; errors++;
+      } finally {
+        it.busy = false;
+        progress(`Retrait : ${nf0.format(++done)} / ${nf0.format(items.length)} mails`, done / items.length);
+        renderSoon();
+      }
+    });
+  } catch (e) {
+    fatal = e;
+  } finally {
+    endOp();
+  }
+  if (fatal) return fatal.status === 401 ? authProblem(fatal) : notice(esc(fatal.message), 'error');
+  let msg = ok
+    ? `${plural(ok, 'mail allégé', 'mails allégés')}. ${fmtSize(freed)} seront libérés quand la corbeille de Gmail sera vidée (automatiquement sous 30 jours${DEMO ? '' : `, ou tout de suite depuis la <a href="https://mail.google.com/mail/?authuser=${encodeURIComponent(S.email)}#trash" target="_blank" rel="noopener">corbeille</a>`}).`
+    : '';
+  if (errors) msg += errors === 1
+    ? " Un mail n'a pas pu être allégé : son original est intact (détail dans la liste)."
+    : ` ${nf0.format(errors)} mails n'ont pas pu être allégés : leurs originaux sont intacts (détail dans la liste).`;
+  notice(msg.trim(), errors ? 'error' : 'ok');
+}
+
+// ─── Affichage ──────────────────────────────────────────────────────────────
+function visibleItems() {
+  const list = S.year ? S.items.filter(it => it.date.getFullYear() === S.year) : [...S.items];
+  const cmp = { size: (a, b) => b.total - a.total, new: (a, b) => b.date - a.date, old: (a, b) => a.date - b.date }[S.sort];
+  return list.sort(cmp);
+}
+const selectedItems = () => S.items.filter(it => S.sel.has(it.id));
+
+let renderTimer = 0;
+function renderSoon() { if (!renderTimer) renderTimer = setTimeout(() => { renderTimer = 0; render(); }, 80); }
+function render() { renderSummary(); renderYears(); renderList(); renderBar(); }
+
+function renderSummary() {
+  if (!S.scanned) return;
+  const { minMB, from, to } = S.scanned;
+  const f = from && frDay(localDate(from)), t = to && frDay(localDate(to));
+  const period = f && t ? `du ${f} au ${t}` : f ? `depuis le ${f}` : t ? `jusqu'au ${t}` : 'toutes dates';
+  $('#caption').textContent = `Pièces jointes de plus de ${minMB} Mo · ${period}`;
+  const pending = S.items.filter(it => !it.cleaned), cleaned = S.items.filter(it => it.cleaned);
+  $('#tMails').textContent = nf0.format(pending.length);
+  $('#tAtts').textContent = nf0.format(sum(pending, it => it.atts.length));
+  $('#tSize').textContent = (pending.length ? '≈ ' : '') + fmtSize(sum(pending, it => it.total));
+  $('#doneLine').hidden = !cleaned.length;
+  $('#doneLine').textContent = `Déjà allégés : ${plural(cleaned.length, 'mail', 'mails')}, ${fmtSize(sum(cleaned, it => it.total))}.`;
+}
+
+function renderYears() {
+  const byYear = new Map();
+  for (const it of S.items) {
+    if (it.cleaned) continue;
+    const y = it.date.getFullYear(), e = byYear.get(y) || { size: 0, n: 0 };
+    e.size += it.total; e.n++; byYear.set(y, e);
+  }
+  if (S.year && !byYear.has(S.year)) byYear.set(S.year, { size: 0, n: 0 });
+  $('#yearsBlock').hidden = byYear.size < 2;
+  const max = Math.max(1, ...[...byYear.values()].map(e => e.size));
+  const box = $('#years');
+  box.classList.toggle('filtering', !!S.year);
+  box.innerHTML = [...byYear.entries()].sort((a, b) => b[0] - a[0]).map(([y, e]) => `
+    <button class="yr${S.year === y ? ' on' : ''}" data-year="${y}" aria-pressed="${S.year === y}">
+      <span class="y">${y}</span>
+      <span class="bar"><i style="width:${(e.size / max * 100).toFixed(1)}%"></i></span>
+      <span class="v">${fmtSize(e.size)} · ${plural(e.n, 'mail', 'mails')}</span>
+    </button>`).join('');
+  $('#yearsHint').innerHTML = S.year ? `${S.year} uniquement · <button class="link" data-year="${S.year}">tout afficher</button>` : "cliquez sur une année pour n'afficher qu'elle";
+}
+
+function renderList() {
+  const items = visibleItems();
+  const selectable = items.filter(it => !it.cleaned);
+  const all = $('#selectAll');
+  all.checked = selectable.length > 0 && selectable.every(it => S.sel.has(it.id));
+  all.indeterminate = !all.checked && selectable.some(it => S.sel.has(it.id));
+  all.disabled = !selectable.length;
+  $('#selectAllLabel').textContent = `Tout sélectionner (${nf0.format(selectable.length)})`;
+
+  if (!S.items.length) {
+    $('#list').innerHTML = S.busy ? '' : `<li class="empty">Aucun mail avec une pièce jointe de plus de ${S.scanned?.minMB} Mo sur cette période. Rien à alléger !</li>`;
+    return;
+  }
+  $('#list').innerHTML = items.map(it => {
+    const badges = [
+      it.busy ? '<span class="badge busy">en cours…</span>' : '',
+      it.cleaned ? '<span class="badge cleaned">allégé</span>' : '',
+      it.saved ? '<span class="badge saved">enregistré</span>' : '',
+      it.error && !it.busy ? `<span class="badge error" title="${esc(it.error)}">erreur</span>` : '',
+    ].join('');
+    const link = DEMO ? '' : `<a class="open" href="${gmailLink(it.newId || it.id)}" target="_blank" rel="noopener">ouvrir dans Gmail ↗</a>`;
+    return `<li class="row${it.cleaned ? ' cleaned' : ''}" data-id="${it.id}">
+      <input type="checkbox" aria-label="Sélectionner ce mail" ${S.sel.has(it.id) ? 'checked' : ''} ${it.cleaned ? 'disabled' : ''}>
+      <div class="when">${frDay(it.date)}</div>
+      <div class="what">
+        <div class="subj">${esc(it.subject)}</div>
+        <div class="from">${esc(senderName(it.from))}</div>
+        <ul class="atts">${it.atts.map(a => `<li>${esc(a.filename)} <span class="muted">· ${fmtSize(a.size)}</span></li>`).join('')}</ul>
+      </div>
+      <div class="side"><div class="size">${fmtSize(it.total)}</div>${badges}${link}</div>
+      ${it.error && !it.busy ? `<div class="err">${esc(it.error)}</div>` : ''}
+    </li>`;
+  }).join('');
+}
+
+function renderBar() {
+  const bar = $('#actionbar');
+  bar.hidden = !S.busy && !S.items.length;
+  if (bar.hidden) return;
+  const prog = $('#prog');
+  prog.classList.toggle('indeterminate', S.busy && S.progFrac == null);
+  prog.querySelector('i').style.width = S.busy && S.progFrac != null ? (S.progFrac * 100).toFixed(1) + '%' : '0';
+  $('#saveBtn').hidden = $('#cleanBtn').hidden = S.busy;
+  $('#stopBtn').hidden = !S.busy;
+  if (S.busy) {
+    $('#barInfo').textContent = S.stop ? 'Arrêt en cours…' : S.progText;
+    $('#stopBtn').disabled = S.stop;
+    return;
+  }
+  const sel = selectedItems().filter(it => !it.cleaned);
+  $('#barInfo').innerHTML = sel.length
+    ? `<strong>${plural(sel.length, 'mail sélectionné', 'mails sélectionnés')}</strong> · ${fmtSize(sum(sel, it => it.total))}`
+    : '<span class="muted">Cochez des mails pour enregistrer leurs pièces jointes ou les retirer de Gmail.</span>';
+  $('#saveBtn').disabled = $('#cleanBtn').disabled = !sel.length;
+}
+
+function notice(html, kind = '') {
+  const n = $('#notice');
+  n.className = 'notice' + (kind ? ' ' + kind : '');
+  n.innerHTML = html;
+  n.hidden = false;
+}
+function hideNotice() { $('#notice').hidden = true; }
+
+// ─── Démarrage et événements ────────────────────────────────────────────────
+function enterApp() {
+  $('#screenLogin').hidden = true;
+  $('#screenApp').hidden = false;
+  $('#account').hidden = false;
+  $('#accountEmail').textContent = S.email;
+  $('#logoutBtn').hidden = DEMO;
+  loadSaved();
+}
+
+async function login() {
+  $('#loginError').hidden = true;
+  try {
+    await requestToken('select_account');
+    S.email = await backend.profile();
+    enterApp();
+  } catch (e) {
+    $('#loginError').textContent = e.message;
+    $('#loginError').hidden = false;
+  }
+}
+
+function logout() {
+  if (S.busy) return;
+  if (S.token && window.google?.accounts?.oauth2) google.accounts.oauth2.revoke(S.token, () => {});
+  location.reload();
+}
+
+$('#loginBtn').onclick = login;
+$('#logoutBtn').onclick = logout;
+$('#criteria').onsubmit = e => { e.preventDefault(); scan(); };
+$('#saveBtn').onclick = saveSelected;
+$('#cleanBtn').onclick = askClean;
+$('#stopBtn').onclick = () => { S.stop = true; renderBar(); };
+$('#sort').onchange = e => { S.sort = e.target.value; renderList(); };
+$('#selectAll').onchange = e => {
+  for (const it of visibleItems()) if (!it.cleaned) e.target.checked ? S.sel.add(it.id) : S.sel.delete(it.id);
+  renderList(); renderBar();
+};
+
+document.addEventListener('click', async e => {
+  const yearBtn = e.target.closest('[data-year]');
+  if (yearBtn) {
+    const y = Number(yearBtn.dataset.year);
+    S.year = S.year === y ? null : y;
+    return render();
+  }
+  if (e.target.closest('[data-action="reconnect"]')) {
+    try { await requestToken(''); hideNotice(); } catch (err) { notice(esc(err.message), 'error'); }
+    return;
+  }
+  const row = e.target.closest('.row');
+  if (!row || e.target.closest('a')) return;
+  const it = S.items.find(x => x.id === row.dataset.id);
+  if (!it || it.cleaned) return;
+  if (e.target.type !== 'checkbox') row.querySelector('input').checked = !S.sel.has(it.id);
+  row.querySelector('input').checked ? S.sel.add(it.id) : S.sel.delete(it.id);
+  const all = $('#selectAll'), selectable = visibleItems().filter(x => !x.cleaned);
+  all.checked = selectable.every(x => S.sel.has(x.id));
+  all.indeterminate = !all.checked && selectable.some(x => S.sel.has(x.id));
+  renderBar();
+});
+
+if (DEMO) {
+  $('#demoBanner').hidden = false;
+  backend.profile().then(email => { S.email = email; enterApp(); });
+} else if (!CONFIGURED) {
+  $('#notConfigured').hidden = false;
+  $('#loginBtn').disabled = true;
+} else {
+  $('#loginBtn').disabled = true;
+  const gsi = document.createElement('script');
+  gsi.src = 'https://accounts.google.com/gsi/client';
+  gsi.async = true;
+  gsi.onload = () => { $('#loginBtn').disabled = false; };
+  gsi.onerror = () => {
+    $('#loginError').textContent = "Le service de connexion Google n'a pas pu être chargé. Vérifiez votre connexion internet (ou un bloqueur de publicités) puis rechargez la page.";
+    $('#loginError').hidden = false;
+  };
+  document.head.append(gsi);
+}
+</script>
+</body>
+</html>
